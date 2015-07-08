@@ -10,6 +10,6 @@ public class ResizeToMatch : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-	
+        GetComponent<Camera>().orthographicSize = 4f * (float)Screen.height / Screen.width;
 	}
 }

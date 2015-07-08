@@ -12,7 +12,13 @@ public class InterpolationState : EulerState {
         neighbors = FindObjectsOfType<InterpolationState>();
         ShowRings(false);
 	}
-	
+
+
+    float GetVScale()
+    {
+        return (float)(Screen.height-60) / 700f;
+    }
+
 	// Update is called once per frame
 	void Update () {
         if (autoPlay)
@@ -35,7 +41,7 @@ public class InterpolationState : EulerState {
             //    }
         }
         transform.position = Vector3.Lerp(interpolateFrom.transform.position, interpolateTo.transform.position, interpolationAt * 0.5f + 0.25f);
-        transform.position = transform.position + new Vector3(0f, GetVOffset(), 0f);
+        transform.position = transform.position + new Vector3(0f, GetVOffset() * GetVScale(), 0f);
 
 
         Vector3 state0, state1;
@@ -51,6 +57,7 @@ public class InterpolationState : EulerState {
                 delta.z = Mathf.Repeat(delta.z + 180f, 360f) - 180f;
 
                 angles = state0 + delta * interpolationAt;
+                quaternionState = Quaternion.Euler(angles);
                 break;
             case Interpolation.Momentum:
                 {
@@ -65,17 +72,26 @@ public class InterpolationState : EulerState {
                     Vector3 m0 = a0 * angle0;
                     Vector3 m1 = a1 * angle1;
                     Vector3 d = m1 - m0;
-                    Debug.Log("a0=" + angle0 + ", a1=" + angle1);
+                    //Debug.Log("a0=" + angle0 + ", a1=" + angle1);
                     Vector3 m11 = a1 * -(360f - angle1);
+                    Vector3 m01 = a0 * -(360f - angle0);
                     if ((m11 - m0).sqrMagnitude < d.sqrMagnitude)
                         d = m11 - m0;
-                    Debug.Log("mag=" + d.magnitude);
+                    if ((m1 - m01).sqrMagnitude < d.sqrMagnitude)
+                    {
+                        d = m1 - m01;
+                        m0 = m01;
+                    }
+                    if ((m11 - m0).sqrMagnitude < d.sqrMagnitude)
+                        d = m11 - m0;
+                    //Debug.Log("mag=" + d.magnitude);
                     Vector3 m = m0 + d * interpolationAt;
                     //Vector3 m = Vector3.Lerp(a0, a1, interpolationAt);
                     float angle = m.magnitude;
                     Vector3 axis = angle > 0f ? m / angle : Vector3.left;
                     Quaternion q = Quaternion.AngleAxis(angle, axis);
                     angles = q.eulerAngles;
+                    quaternionState = q;
                 }
                 break;
             case Interpolation.QuaternionLerp:
@@ -87,6 +103,7 @@ public class InterpolationState : EulerState {
                     Quaternion q = Quaternion.Lerp(q0, q1, interpolationAt);
 
                     angles = q.eulerAngles;
+                    quaternionState = q;
                 }
                 break;
             case Interpolation.SphereQuatLerp:
@@ -98,6 +115,7 @@ public class InterpolationState : EulerState {
                     Quaternion q = Quaternion.Slerp(q0, q1, interpolationAt);
 
                     angles = q.eulerAngles;
+                    quaternionState = q;
                 }
                 break;
         }
@@ -119,8 +137,10 @@ public class InterpolationState : EulerState {
     public Interpolation interpolate = Interpolation.Euler;
     public EulerState interpolateFrom,
                         interpolateTo;
-    public static float interpolationAt = 0f, autoAt = 0f;
+    static float interpolationAt = 0f, autoAt = 0f;
 
+
+    public Quaternion quaternionState = Quaternion.identity;
 
     void OnGUI()
     {

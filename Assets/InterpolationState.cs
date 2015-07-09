@@ -106,7 +106,7 @@ public class InterpolationState : EulerState {
                     quaternionState = q;
                 }
                 break;
-            case Interpolation.SphereQuatLerp:
+            case Interpolation.QuaternionSLerp:
                 {
                     state0 = interpolateFrom.angles;
                     state1 = interpolateTo.angles;
@@ -131,7 +131,7 @@ public class InterpolationState : EulerState {
         Euler,
         Momentum,
         QuaternionLerp,
-        SphereQuatLerp
+        QuaternionSLerp
     };
 
     public Interpolation interpolate = Interpolation.Euler;

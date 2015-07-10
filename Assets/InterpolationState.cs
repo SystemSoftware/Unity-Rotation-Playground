@@ -4,13 +4,14 @@ using System;
 
 public class InterpolationState : EulerState {
 
-
-    private int playDirection = 1;
+    Tracer tracer;
+//    private int playDirection = 1;
 
 	// Use this for initialization
 	void Start () {
-        neighbors = FindObjectsOfType<InterpolationState>();
+    //    neighbors = FindObjectsOfType<InterpolationState>();
         ShowRings(false);
+        tracer = GetComponentInChildren<Tracer>();
 	}
 
 
@@ -20,12 +21,12 @@ public class InterpolationState : EulerState {
     }
 
 	// Update is called once per frame
-	void Update () {
+	public void Update () {
         if (autoPlay)
         {
             autoAt = Mathf.Repeat(autoAt + Time.deltaTime * 0.5f, 2f * Mathf.PI);
             interpolationAt = Mathf.Sin(autoAt) * 0.5f + 0.5f;
-            float r = Mathf.Abs(0.5f - interpolationAt) * 2f;
+            //float r = Mathf.Abs(0.5f - interpolationAt) * 2f;
             //float speed = (1f - Mathf.Pow(Mathf.SmoothStep(0f, 1f, r),2f)) * 0.9f + 0.1f;
             //interpolationAt = interpolationAt + Time.deltaTime * 0.7f * playDirection * speed;
             //if (interpolationAt >= 1f)
@@ -48,7 +49,7 @@ public class InterpolationState : EulerState {
 
         switch (interpolate)
         {
-            case Interpolation.Euler:
+            case Interpolation.EulerAngleLerp:
                 state0 = interpolateFrom.angles;
                     state1 = interpolateTo.angles;
                 Vector3 delta = state1 - state0;
@@ -59,7 +60,7 @@ public class InterpolationState : EulerState {
                 angles = state0 + delta * interpolationAt;
                 quaternionState = Quaternion.Euler(angles);
                 break;
-            case Interpolation.Momentum:
+            case Interpolation.RotationVectorLerp:
                 {
                     state0 = interpolateFrom.angles;
                     state1 = interpolateTo.angles;
@@ -124,20 +125,20 @@ public class InterpolationState : EulerState {
 
     bool autoPlay = false;
 
-    InterpolationState[] neighbors;
+    //InterpolationState[] neighbors;
 
     public enum Interpolation
     {
-        Euler,
-        Momentum,
+        EulerAngleLerp,
+        RotationVectorLerp,
         QuaternionLerp,
         QuaternionSLerp
     };
 
-    public Interpolation interpolate = Interpolation.Euler;
+    public Interpolation interpolate = Interpolation.EulerAngleLerp;
     public EulerState interpolateFrom,
                         interpolateTo;
-    static float interpolationAt = 0f, autoAt = 0f;
+    public static float interpolationAt = 0f, autoAt = 0f;
 
 
     public Quaternion quaternionState = Quaternion.identity;
@@ -152,7 +153,7 @@ public class InterpolationState : EulerState {
         GUI.Label(new Rect(labelX, labelY, 150, 20), interpolate.ToString());
 
 
-        if (interpolate == Interpolation.Euler)
+        if (interpolate == Interpolation.EulerAngleLerp)
         {
             float old = interpolationAt;
             interpolationAt = GUI.HorizontalSlider(new Rect(85, Screen.height - 50, Screen.width - 110, 20), interpolationAt, 0f, 1f);
@@ -171,7 +172,16 @@ public class InterpolationState : EulerState {
         int w = 150;
         int x = Screen.width / 2 + Mathf.FloorToInt(GetVOffset()) * w;
 
-        bool newRings = GUI.Toggle(new Rect(x, Screen.height - 70, w, 20), showRings, interpolate.ToString() + ".Rings");
+        if (interpolate == Interpolation.EulerAngleLerp)
+        {
+            GUI.Label(new Rect(x - 100, Screen.height - 90, w, 20), "Traces:");
+            GUI.Label(new Rect(x - 100, Screen.height - 70, w, 20), "Rings:");
+        }
+        bool newRings = GUI.Toggle(new Rect(x, Screen.height - 70, w, 20), showRings, interpolate.ToString());
+        if (tracer != null)
+        {
+            tracer.SetTraceVisible( GUI.Toggle(new Rect(x, Screen.height - 90, w, 20), tracer.TraceIsVisible(), interpolate.ToString()) );
+        }
 
         //if (newRings)
         //{
@@ -180,12 +190,17 @@ public class InterpolationState : EulerState {
         //            n.ShowRings(false);
         //}
         ShowRings(newRings);
-
+        
     }
 
+
+    float GetVOffset(Interpolation i)
+    {
+        return (float)i - Enum.GetNames(typeof(Interpolation)).Length / 2 + 0.5f;
+    }
     float GetVOffset()
     {
-        return (float)interpolate - Enum.GetNames(typeof(Interpolation)).Length / 2 + 0.5f;
+        return GetVOffset(interpolate);
     }
 
 

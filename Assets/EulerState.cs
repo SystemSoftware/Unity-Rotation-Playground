@@ -13,7 +13,8 @@ public class EulerState : MonoBehaviour {
 
     public Vector3 angles = Vector3.zero;
 
-
+    public int version=0;
+    public int versionUpdated = 0;
     
 
     public enum Slider
@@ -28,13 +29,34 @@ public class EulerState : MonoBehaviour {
     public Slider slider = Slider.None;
     protected bool showRings = true;
 
+    const int w = 200;
+    const int tw = 20;
+    const int h = 20;
+
+
+    void SignalNewVersion()
+    {
+        version++;
+        versionUpdated = Time.frameCount;
+        foreach (var inter in FindObjectsOfType<InterpolationState>())
+            inter.Update();
+    }
+
+    void Slide(ref float angle, int index, float left)
+    {
+        float n = GUI.HorizontalSlider(new Rect(left + tw, 25 + index * h, w, h), angle, 0f, 360f);
+        if (n != angle)
+        {
+            angle = n;
+            SignalNewVersion();
+        }
+    }
+
     void OnGUI()
     {
         bool newRings = showRings;
         {
             int left = 25;
-            int w = 200;
-            int tw = 20;
             switch (slider)
             {
                 case Slider.Left:
@@ -45,10 +67,9 @@ public class EulerState : MonoBehaviour {
                 case Slider.None:
                     return;
             }
-            int h = 20;
-            angles.x = GUI.HorizontalSlider(new Rect(left + tw, 25, w, h), angles.x, 0f, 360f);
-            angles.y = GUI.HorizontalSlider(new Rect(left + tw, 25 + h, w, h), angles.y, 0f, 360f);
-            angles.z = GUI.HorizontalSlider(new Rect(left + tw, 25 + 2 * h, w, h), angles.z, 0f, 360f);
+            Slide(ref angles.x, 0, left);
+            Slide(ref angles.y, 1, left);
+            Slide(ref angles.z, 2, left);
             GUI.Label(new Rect(left, 20, tw, h), "x");
             GUI.Label(new Rect(left, 20 + h, tw, h), "y");
             GUI.Label(new Rect(left, 20 + h * 2, tw, h), "z");
@@ -58,6 +79,7 @@ public class EulerState : MonoBehaviour {
                 angles.x = UnityEngine.Random.Range(0f, 360f);
                 angles.y = UnityEngine.Random.Range(0f, 360f);
                 angles.z = UnityEngine.Random.Range(0f, 360f);
+                SignalNewVersion();
             }
 
             newRings = GUI.Toggle(new Rect(left, 25 + 4 * h, tw + w, h), showRings, "Show Rings");
